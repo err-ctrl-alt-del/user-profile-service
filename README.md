@@ -1,13 +1,58 @@
 # User Profile Application
 
 ##### Minishift Test
----
+The following is an example of deploying a Spring-Boot Application with MongoDB to Open Shift 
+Note : this is not a production example 
 
-##### How to run this project?
+##
+Prerequisites
++ Minishift installed locally 
++ Maven 
+
+##
+Summary of steps :
+1.) Package the application :
+$ mvn clean package
+
+2.) Start Open Shift :
+$ minishift start
+
+3.) Logon to Console , create a new MongoDB instance from the Catalogue and follow the wizzard
+
+4.) Create a new build with a base to run fat-jars :
+$ oc new-build registry.access.redhat.com/redhat-openjdk-18/openjdk18-openshift:1.3 --binary=true --name=<SERVICE_NAME>
+
+5.) Initiate a Build using the package from step 1 : 
+oc start-build <SERVICE_NAME> --from-dir <Source-Target-Directory> --follow
+
+6.) Deploy the Application : 
+oc new-app <SERVICE_NAME>
+
+7.) The connection string in the application.yml has the follwing Parameters: MONGO_DATABASE_USER,MONGO_DATABASE_PASSWORD,MONGO_DATABASE_NAME
+in order to expose them from your MongoDB In your mongo DB Instance
+Naviagte to >Resources>Secrets>mongodb 
+Click ACTIONS - edit YAML and set the following 
+        template.openshift.io/expose-admin_password: '{.data[''DATABASE_ADMIN_PASSWORD'']}'
+        template.openshift.io/expose-database_name: '{.data[''DATABASE_NAME'']}'
+        template.openshift.io/expose-password: '{.data[''DATABASE_PASSWORD'']}'
+        template.openshift.io/expose-username: '{.data[''DATABASE_USER'']}'
+
+8.) Edit the Build for <SERVICE-NAME> to include the Parameters exposed in step 7:
+$ oc set env bc/user-profile-service --from="secret/mongodb" --prefix=MONGO_
+
+9.) Expose the services by creating a public route :
+$ oc expose svc <SERVICE_NAME>
+
+10. Test the service by navigating to >Applications>Routes and get the <Hostname> 
+http:<hostname>/swagger-ui.html
+
+
+##### Below is a sample run of the Project 
 
 Running on minishift:
 ---
 Run using the following commands
+
  
 	PS C:\Users\Gerrard\Documents\GitHub\user-profile-service>mvn clean package
 	
